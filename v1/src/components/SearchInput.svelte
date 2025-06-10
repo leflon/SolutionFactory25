@@ -1,7 +1,6 @@
 <script lang="ts">
-	import type { Stop } from '$lib/types';
-	import { Search } from '@lucide/svelte';
 	import { appState } from '$lib/store.svelte';
+	import { Search } from '@lucide/svelte';
 
 	interface Props {
 		placeholder: string;

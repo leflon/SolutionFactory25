@@ -22,7 +22,7 @@ export type Link = {
 
 export type Itinerary = {
 	stops: number[];
-	times: number[];
+	durations: number[];
 }
 
 export type ItineraryQuery = {

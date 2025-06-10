@@ -1,5 +1,6 @@
 <script lang="ts">
 	import { appState } from '$lib/store.svelte';
+	import ItineraryBreakdown from './ItineraryBreakdown.svelte';
 	import SearchInput from './SearchInput.svelte';
 
 	let canRequestItinerary = $derived(
@@ -21,6 +22,9 @@
 	<SearchInput bind:selectedStop={appState.itineraryQuery.to} placeholder={"Station d'arrivée"} />
 	{#if canRequestItinerary}
 		<button onclick={handleSearch}>Chercher</button>
+	{/if}
+	{#if appState.activeItinerary}
+		<ItineraryBreakdown itinerary={appState.activeItinerary} />
 	{/if}
 </div>
 

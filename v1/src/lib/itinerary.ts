@@ -22,14 +22,18 @@ export function dijkstra(graph: AdjancencyList, start: number, end: number): Iti
         const [currentNode, currentDistance] = queue.pop()!;
         if (currentNode === end) {
             const stops: number[] = [];
-            const times: number[] = [];
+            let durations: number[] = [];
             let node: number | null = end;
             while (node !== null) {
                 stops.unshift(node!);
-                times.unshift(distances[node!]);
+                durations.unshift(distances[node!]);
                 node = previous[node];
             }
-            return { stops, times };
+            durations = durations.map((time, index) => {
+                if (index === 0) return time; // First stop time is the distance to itself
+                return time - durations[index - 1]; // Calculate time from previous stop
+            });
+            return { stops, durations };
         }
         if (currentDistance > distances[currentNode]) continue;
         for (const [neighbor, time] of graph.get(currentNode)!) {
@@ -42,7 +46,7 @@ export function dijkstra(graph: AdjancencyList, start: number, end: number): Iti
         }
     }
 
-    return { stops: [], times: [] };
+    return { stops: [], durations: [] };
 }
 
 

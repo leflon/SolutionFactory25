@@ -3,7 +3,7 @@
 	import { appState } from '$lib/store.svelte';
 	import { onMount } from 'svelte';
 	import MetroMap from '../components/MetroMap.svelte';
-	import RoutePane from '../components/ItineraryPane.svelte';
+	import ItineraryPane from '../components/ItineraryPane.svelte';
 	let error = $state('');
 
 	onMount(async () => {
@@ -24,7 +24,7 @@
 {:else}
 	<div class="app-layout">
 		<div class="left-pane">
-			<RoutePane />
+			<ItineraryPane />
 		</div>
 		<MetroMap />
 	</div>
