@@ -1,4 +1,5 @@
 <script lang="ts">
+	import { LINE_COLORS } from '$lib/constants';
 	import type { Link, Path, Stop } from '$lib/types';
 	import SearchInput from '../components/SearchInput.svelte';
 	import { onMount } from 'svelte';
@@ -6,7 +7,7 @@
 	let links: Link[] = $state([]);
 	let error = $state('');
 	// svelte-ignore non_reactive_update
-	let canvas: HTMLCanvasElement;
+	let mapContainer: SVGElement;
 	let search = $state<[number | null, number | null]>([null, null]);
 	let selectedPath: Path | null = $state(null);
 
@@ -19,28 +20,48 @@
 	}
 
 	function drawPath() {
-		if (!selectedPath || !canvas) return;
-		const ctx = canvas.getContext('2d');
-		if (!ctx) return;
-		ctx.clearRect(0, 0, canvas.width, canvas.height);
-		const img = new Image();
-		img.src = '/map.png';
-		img.onload = () => {
-			ctx.drawImage(img, 0, 0);
-			ctx.beginPath();
-			ctx.moveTo(stops[selectedPath![0][0]].pos_x, stops[selectedPath![0][0]].pos_y);
-			selectedPath![0].forEach((stopId) => {
-				const stop = stops[stopId];
-				ctx.lineTo(stop.pos_x, stop.pos_y);
-			});
-			ctx.strokeStyle = 'red';
-			ctx.lineWidth = 2;
-			ctx.stroke();
-			ctx.closePath();
-		};
-		img.onerror = () => {
-			error = 'Failed to load map image';
-		};
+		if (!selectedPath) return;
+		// Reset previous path stops
+		const allStops = document.querySelectorAll<SVGCircleElement>('circle.stop');
+		allStops.forEach((stop) => {
+			stop.classList.remove('path-stop');
+			stop.style.animationDelay = '';
+			stop.style.animationDuration = '';
+		});
+		// Bounce stops in the current route
+		const stops = selectedPath[0].map((s) =>
+			document.querySelector(`circle[data-stop-id="${s}"]`)
+		) as SVGCircleElement[];
+		const duration = Math.max(2, stops.length * 0.1);
+		let delay = 0;
+		for (const stop of stops) {
+			stop!.classList.add('path-stop');
+			stop!.style.animationDelay = `${delay}s`;
+			stop!.style.animationDuration = `${duration}s`;
+			delay += 0.1;
+		}
+
+		// Dim other stops
+		const otherStops = document.querySelectorAll<SVGCircleElement>('circle.stop:not(.path-stop)');
+		otherStops.forEach((stop) => {
+			stop.setAttribute('opacity', '0.5');
+		});
+		// Highlight path lines
+		const pathLines = document.querySelectorAll<SVGLineElement>('line[data-stop1][data-stop2]');
+		for (const line of pathLines) {
+			const stop1Id = parseInt(line.getAttribute('data-stop1') || '0', 10);
+			const stop2Id = parseInt(line.getAttribute('data-stop2') || '0', 10);
+			if (selectedPath[0].includes(stop1Id) && selectedPath[0].includes(stop2Id)) {
+				const length = Math.sqrt(
+					Math.pow(parseFloat(line.getAttribute('x2') || '0') - parseFloat(line.getAttribute('x1') || '0'),2) +
+					Math.pow(parseFloat(line.getAttribute('y2') || '0') - parseFloat(line.getAttribute('y1') || '0'),2)
+				);
+				line.style.setProperty('--line-length', `${length}`);
+				line.classList.add('path-line');
+			} else {
+				line.setAttribute('opacity', '0');
+			}
+		}
 	}
 
 	onMount(async () => {
@@ -50,30 +71,62 @@
 			const data = await res.json();
 			stops = data.stops;
 			links = data.links;
+			// Draw all links between stops
+			for (const link of links) {
+				const line = document.createElementNS('http://www.w3.org/2000/svg', 'line');
+				const stop1 = stops.find((s) => s.id === link.stop1);
+				const stop2 = stops.find((s) => s.id === link.stop2);
+				if (!stop1 || !stop2) continue; // Skip if stops are not found
+				if (stop1.line !== stop2.line) continue;
+				line.setAttribute('data-stop1', stop1.id.toString());
+				line.setAttribute('data-stop2', stop2.id.toString());
+				line.setAttribute('x1', stop1.pos_x.toString());
+				line.setAttribute('y1', stop1.pos_y.toString());
+				line.setAttribute('x2', stop2.pos_x.toString());
+				line.setAttribute('y2', stop2.pos_y.toString());
+				line.setAttribute('stroke', LINE_COLORS[stop1.line] || 'black');
+				line.setAttribute('stroke-width', '3');
+				mapContainer.appendChild(line);
+			}
+			// Draw all stops as circles
+			for (const stop of stops) {
+				const circle = document.createElementNS('http://www.w3.org/2000/svg', 'circle');
+				circle.setAttribute('cx', stop.pos_x.toString());
+				circle.setAttribute('cy', stop.pos_y.toString());
+				circle.setAttribute('r', '5');
+				circle.setAttribute('fill', LINE_COLORS[stop.line] || 'black');
+				circle.setAttribute('data-stop-id', stop.id.toString());
+				circle.setAttribute('class', 'stop');
+				const text = document.createElementNS('http://www.w3.org/2000/svg', 'text');
+				text.setAttribute('x', stop.pos_x.toString());
+				text.setAttribute('y', (stop.pos_y - 10).toString());
+				text.setAttribute('text-anchor', 'middle');
+				text.setAttribute('font-size', '24');
+				text.setAttribute('font-family', 'Arial, sans-serif');
+				text.setAttribute('fill', 'white');
+				text.setAttribute('stroke-width', '1');
+				text.setAttribute('stroke', 'black');
+				text.classList.add('stop-label', 'hidden');
+				text.textContent = stop.name;
+				/* Stops interaction */
+				circle.addEventListener('click', () => {
+					const stopId = parseInt(circle.getAttribute('data-stop-id') || '0', 10);
+					if (search[0] === null) search[0] = stopId;
+					else if (search[1] === null) search[1] = stopId;
+					else search = [stopId, null];
+				});
+				circle.addEventListener('mouseenter', () => {
+					text.classList.remove('hidden');
+				});
+				circle.addEventListener('mouseleave', () => {
+					text.classList.add('hidden');
+				});
+				mapContainer.appendChild(circle);
+				mapContainer.appendChild(text);
+			}
 		} catch (e: any) {
 			error = e.message;
 		}
-
-		const ctx = canvas!.getContext('2d');
-		if (!ctx) {
-			error = 'Failed to get canvas context';
-			return;
-		}
-		const img = new Image();
-		img.src = '/map.png';
-		img.onload = () => {
-			ctx.drawImage(img, 0, 0);
-			stops.forEach((stop) => {
-				ctx.beginPath();
-				ctx.arc(stop.pos_x, stop.pos_y, 3, 0, Math.PI * 2);
-				ctx.fillStyle = 'black';
-				ctx.fill();
-				ctx.closePath();
-			});
-		};
-		img.onerror = () => {
-			error = 'Failed to load map image';
-		};
 	});
 </script>
 
@@ -89,7 +142,23 @@
 			{/if}
 		</div>
 	</div>
-	<canvas bind:this={canvas} width="987" height="952"></canvas>
+	<svg
+		bind:this={mapContainer}
+		viewBox="0 0 987 952"
+		height="100vh"
+		preserveAspectRatio="xMidYMid meet"
+	>
+		<rect x="0" y="0" width="100%" height="100%" fill="#f0f0f0"></rect>
+		<image
+			href="/map.png"
+			x="0"
+			y="0"
+			width="100%"
+			height="100%"
+			opacity="0.2"
+			preserveAspectRatio="xMidYMid meet"
+		/>
+	</svg>
 {/if}
 
 <style>
@@ -111,10 +180,34 @@
 		gap: 10px;
 	}
 
-	canvas {
-		border: 1px solid #ccc;
-		display: block;
-		margin: 0 auto;
-		max-width: 50%;
+	:global(circle.stop) {
+		cursor: pointer;
+	}
+	:global(circle.path-stop) {
+		z-index: 1000;
+		animation: bounce 1s ease infinite;
+	}
+	:global(text.stop-label.hidden) {
+		opacity: 0;
+		pointer-events: none;
+	}
+	:global(line.path-line) {
+		animation: path-line 0.3s ease infinite;
+	}
+
+	@keyframes path-line {
+		from {
+			stroke-dashoffset: var(--line-length);
+		}
+		to {
+			stroke-dashoffset: 0;
+		}
+	}
+
+	@keyframes bounce {
+		50% {
+			r: 8;
+			z: 1001;
+		}
 	}
 </style>

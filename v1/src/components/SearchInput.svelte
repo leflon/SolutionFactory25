@@ -5,7 +5,7 @@
 	interface Props {
 		stops: Stop[];
 		placeholder: string;
-		selectedStop: number | null;	
+		selectedStop: number | null;
 	}
 	let { stops, placeholder, selectedStop = $bindable() }: Props = $props();
 
@@ -13,6 +13,10 @@
 	let searchResults: number[] = $state([]);
 	let showResults: boolean = $state(false);
 
+	$effect(() => {
+		if (selectedStop !== null && selectedStop >= 0 && selectedStop < stops.length)
+			searchTerm = stops[selectedStop].name;
+	});
 	async function handleInput(event: Event) {
 		const target = event.target as HTMLInputElement;
 		searchTerm = target.value;
