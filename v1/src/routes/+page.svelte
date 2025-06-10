@@ -8,6 +8,8 @@
 	let error = $state('');
 	// svelte-ignore non_reactive_update
 	let mapContainer: SVGElement;
+	// svelte-ignore non_reactive_update
+	let hoverStopLabel: HTMLDivElement;
 	let search = $state<[number | null, number | null]>([null, null]);
 	let selectedPath: Path | null = $state(null);
 
@@ -19,15 +21,26 @@
 		drawPath();
 	}
 
-	function drawPath() {
-		if (!selectedPath) return;
-		// Reset previous path stops
+	function resetMapStyles() {
+		// Reset all path lines
+		const pathLines = document.querySelectorAll<SVGLineElement>('line');
+		pathLines.forEach((line) => {
+			line.classList.remove('path-line');
+			line.setAttribute('opacity', '1');
+		});
+		// Reset all stops
 		const allStops = document.querySelectorAll<SVGCircleElement>('circle.stop');
 		allStops.forEach((stop) => {
 			stop.classList.remove('path-stop');
 			stop.style.animationDelay = '';
 			stop.style.animationDuration = '';
+			stop.setAttribute('opacity', '1');
 		});
+	}
+
+	function drawPath() {
+		if (!selectedPath) return;
+		resetMapStyles();
 		// Bounce stops in the current route
 		const stops = selectedPath[0].map((s) =>
 			document.querySelector(`circle[data-stop-id="${s}"]`)
@@ -38,14 +51,14 @@
 			stop!.classList.add('path-stop');
 			stop!.style.animationDelay = `${delay}s`;
 			stop!.style.animationDuration = `${duration}s`;
+			mapContainer.appendChild(stop); // Moves the stop to the end of the SVG to ensure it is on top
 			delay += 0.1;
 		}
 
 		// Dim other stops
 		const otherStops = document.querySelectorAll<SVGCircleElement>('circle.stop:not(.path-stop)');
-		otherStops.forEach((stop) => {
-			stop.setAttribute('opacity', '0.5');
-		});
+		otherStops.forEach((stop) => stop.setAttribute('opacity', '0.5'));
+
 		// Highlight path lines
 		const pathLines = document.querySelectorAll<SVGLineElement>('line[data-stop1][data-stop2]');
 		for (const line of pathLines) {
@@ -53,13 +66,20 @@
 			const stop2Id = parseInt(line.getAttribute('data-stop2') || '0', 10);
 			if (selectedPath[0].includes(stop1Id) && selectedPath[0].includes(stop2Id)) {
 				const length = Math.sqrt(
-					Math.pow(parseFloat(line.getAttribute('x2') || '0') - parseFloat(line.getAttribute('x1') || '0'),2) +
-					Math.pow(parseFloat(line.getAttribute('y2') || '0') - parseFloat(line.getAttribute('y1') || '0'),2)
+					Math.pow(
+						parseFloat(line.getAttribute('x2') || '0') - parseFloat(line.getAttribute('x1') || '0'),
+						2
+					) +
+						Math.pow(
+							parseFloat(line.getAttribute('y2') || '0') -
+								parseFloat(line.getAttribute('y1') || '0'),
+							2
+						)
 				);
 				line.style.setProperty('--line-length', `${length}`);
 				line.classList.add('path-line');
 			} else {
-				line.setAttribute('opacity', '0');
+				line.setAttribute('opacity', '0.2');
 			}
 		}
 	}
@@ -97,17 +117,6 @@
 				circle.setAttribute('fill', LINE_COLORS[stop.line] || 'black');
 				circle.setAttribute('data-stop-id', stop.id.toString());
 				circle.setAttribute('class', 'stop');
-				const text = document.createElementNS('http://www.w3.org/2000/svg', 'text');
-				text.setAttribute('x', stop.pos_x.toString());
-				text.setAttribute('y', (stop.pos_y - 10).toString());
-				text.setAttribute('text-anchor', 'middle');
-				text.setAttribute('font-size', '24');
-				text.setAttribute('font-family', 'Arial, sans-serif');
-				text.setAttribute('fill', 'white');
-				text.setAttribute('stroke-width', '1');
-				text.setAttribute('stroke', 'black');
-				text.classList.add('stop-label', 'hidden');
-				text.textContent = stop.name;
 				/* Stops interaction */
 				circle.addEventListener('click', () => {
 					const stopId = parseInt(circle.getAttribute('data-stop-id') || '0', 10);
@@ -115,14 +124,22 @@
 					else if (search[1] === null) search[1] = stopId;
 					else search = [stopId, null];
 				});
-				circle.addEventListener('mouseenter', () => {
-					text.classList.remove('hidden');
+				function moveStopLabel(x: number, y: number) {
+					hoverStopLabel.style.left = `${x}px`;
+					hoverStopLabel.style.top = `${y}px`;
+				}
+				circle.addEventListener('mouseenter', (e) => {
+					hoverStopLabel.textContent = stop.name;
+					moveStopLabel(e.clientX, e.clientY);
+					hoverStopLabel.classList.remove('hidden');
+				});
+				circle.addEventListener('mousemove', (e) => {
+					moveStopLabel(e.clientX, e.clientY);
 				});
 				circle.addEventListener('mouseleave', () => {
-					text.classList.add('hidden');
+					hoverStopLabel.classList.add('hidden');
 				});
 				mapContainer.appendChild(circle);
-				mapContainer.appendChild(text);
 			}
 		} catch (e: any) {
 			error = e.message;
@@ -142,23 +159,26 @@
 			{/if}
 		</div>
 	</div>
-	<svg
-		bind:this={mapContainer}
-		viewBox="0 0 987 952"
-		height="100vh"
-		preserveAspectRatio="xMidYMid meet"
-	>
-		<rect x="0" y="0" width="100%" height="100%" fill="#f0f0f0"></rect>
-		<image
-			href="/map.png"
-			x="0"
-			y="0"
-			width="100%"
-			height="100%"
-			opacity="0.2"
+	<div class="map-container">
+		<svg
+			bind:this={mapContainer}
+			viewBox="0 0 987 952"
+			height="100vh"
 			preserveAspectRatio="xMidYMid meet"
-		/>
-	</svg>
+		>
+			<rect x="0" y="0" width="100%" height="100%" fill="#f0f0f0"></rect>
+			<image
+				href="/map.png"
+				x="0"
+				y="0"
+				width="100%"
+				height="100%"
+				opacity="0.2"
+				preserveAspectRatio="xMidYMid meet"
+			/>
+		</svg>
+		<div class="hover-stop-label hidden" bind:this={hoverStopLabel}></div>
+	</div>
 {/if}
 
 <style>
@@ -180,6 +200,26 @@
 		gap: 10px;
 	}
 
+	.map-container {
+		position: relative;
+	}
+
+	.hover-stop-label {
+		position: fixed;
+		background-color: rgba(0, 0, 0, 0.7);
+		color: white;
+		padding: 5px 10px;
+		border-radius: 5px;
+		pointer-events: none;
+		font: 14px Arial;
+		transition: opacity 0.1s ease;
+		transform: translate(-50%, -105%);
+		z-index: 1001;
+	}
+	.hover-stop-label.hidden {
+		opacity: 0;
+		pointer-events: none;
+	}
 	:global(circle.stop) {
 		cursor: pointer;
 	}
@@ -190,18 +230,6 @@
 	:global(text.stop-label.hidden) {
 		opacity: 0;
 		pointer-events: none;
-	}
-	:global(line.path-line) {
-		animation: path-line 0.3s ease infinite;
-	}
-
-	@keyframes path-line {
-		from {
-			stroke-dashoffset: var(--line-length);
-		}
-		to {
-			stroke-dashoffset: 0;
-		}
 	}
 
 	@keyframes bounce {
