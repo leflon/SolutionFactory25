@@ -3,6 +3,14 @@ import type { AdjancencyList, Link, Stop } from './types';
 
 const db = new Database("data/db.sqlite");
 
+function normalize(name: string) {
+	return name
+		.normalize("NFD") // Decompose accented characters
+		.replace(/[\u0300-\u036f]/g, "") // Remove diacritics
+		.replace(/[^a-zA-Z0-9]/g, '') // Remove all non-alphanumeric characters
+		.toLowerCase();
+}
+
 export function getStops(): Stop[] {
 	const rows = db.prepare("SELECT * FROM Stops").all().map(r => ({ ...<Stop>r, id: parseInt((<Stop>r).id as any as string) })) as Stop[];
 	return rows;
@@ -15,6 +23,12 @@ export function getLinks(): Link[] {
 		stop2: parseInt(row.stop2),
 		time: parseInt(row.time, 10)
 	}));
+}
+
+export function getStopIdsByName(name: string): string[] {
+	const normalizedName = normalize(name);
+	const rows = db.prepare("SELECT id FROM Stops WHERE plain_name LIKE ?").all(`%${normalizedName}%`) as { id: string }[];
+	return rows.map(row => row.id);
 }
 
 export function getStopsAdjacency(): AdjancencyList {
