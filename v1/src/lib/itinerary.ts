@@ -1,4 +1,4 @@
-import type { AdjancencyList } from "./types";
+import type { AdjancencyList, Itinerary } from "./types";
 import Heap from "heap";
 
 /**
@@ -8,7 +8,7 @@ import Heap from "heap";
  * @param end - The destination stop.
  * @returns An array containing the shortest path and an array of times for each stop.
  */
-export function dijkstra(graph: AdjancencyList, start: number, end: number): [number[], number[]] {
+export function dijkstra(graph: AdjancencyList, start: number, end: number): Itinerary {
     const distances: Record<number, number> = {};
     const previous: Record<number, number | null> = {};
     const queue = new Heap<[number, number]>((a, b) => a[1] - b[1]);
@@ -21,15 +21,15 @@ export function dijkstra(graph: AdjancencyList, start: number, end: number): [nu
     while (queue.size() > 0) {
         const [currentNode, currentDistance] = queue.pop()!;
         if (currentNode === end) {
-            const path: number[] = [];
+            const stops: number[] = [];
             const times: number[] = [];
             let node: number | null = end;
             while (node !== null) {
-                path.unshift(node!);
+                stops.unshift(node!);
                 times.unshift(distances[node!]);
                 node = previous[node];
             }
-            return [path, times];
+            return { stops, times };
         }
         if (currentDistance > distances[currentNode]) continue;
         for (const [neighbor, time] of graph.get(currentNode)!) {
@@ -41,7 +41,8 @@ export function dijkstra(graph: AdjancencyList, start: number, end: number): [nu
             }
         }
     }
-    return [[], []];
+
+    return { stops: [], times: [] };
 }
 
 

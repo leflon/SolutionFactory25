@@ -1,21 +1,21 @@
 <script lang="ts">
 	import type { Stop } from '$lib/types';
 	import { Search } from '@lucide/svelte';
+	import { appState } from '$lib/store.svelte';
 
 	interface Props {
-		stops: Stop[];
 		placeholder: string;
 		selectedStop: number | null;
 	}
-	let { stops, placeholder, selectedStop = $bindable() }: Props = $props();
+	let { placeholder, selectedStop = $bindable() }: Props = $props();
 
 	let searchTerm: string = $state('');
 	let searchResults: number[] = $state([]);
 	let showResults: boolean = $state(false);
 
 	$effect(() => {
-		if (selectedStop !== null && selectedStop >= 0 && selectedStop < stops.length)
-			searchTerm = stops[selectedStop].name;
+		if (selectedStop !== null && selectedStop >= 0 && selectedStop < appState.stops.length)
+			searchTerm = appState.stops[selectedStop].name;
 	});
 	async function handleInput(event: Event) {
 		const target = event.target as HTMLInputElement;
@@ -33,7 +33,7 @@
 	const handleSelection = (stop: number) => {
 		selectedStop = stop;
 		showResults = false;
-		searchTerm = stops[selectedStop].name;
+		searchTerm = appState.stops[selectedStop].name;
 	};
 
 	const handleFocus = () => {
@@ -62,14 +62,18 @@
 	{#if searchResults.length > 0 && showResults}
 		<ul>
 			{#each searchResults as result}
-				<li onclick={() => handleSelection(result)}>{stops[result].name}</li>
+				<li>
+					<button type="button" onclick={() => handleSelection(result)}>
+						{appState.stops[result].name}
+					</button>
+				</li>
 			{/each}
 		</ul>
 	{/if}
 </div>
 
 <style>
-	.seach-container {
+	.search-container {
 		position: relative;
 		width: 100%;
 		margin: 0 auto;
@@ -85,23 +89,28 @@
 		border-radius: 10em;
 		flex-grow: 1;
 		font-size: 12px;
+		width: 200px;
 	}
 
-	button {
+	button[type='submit'] {
 		border: none;
 		background-color: #007bff;
 		color: white;
 		border-radius: 10em;
 		width: 32px;
 		height: 32px;
+		flex-shrink: 0;
+		display: flex;
+		align-items: center;
+		justify-content: center;
 		cursor: pointer;
+		&:hover {
+			background-color: #0056b3;
+		}
 	}
-
-	button:hover {
-		background-color: #0056b3;
-	}
-
 	ul {
+		border-radius: 5px;
+		z-index: 1000;
 		position: absolute;
 		transform: translateY(5px);
 		width: 100%;
@@ -110,15 +119,26 @@
 		padding: 0;
 		background-color: white;
 		border: 1px solid #ccc;
-		border-radius: 4px;
-		max-height: 200px;
+		overflow-x: hidden;
 		overflow-y: auto;
+		max-height: 300px;
 	}
 	li {
 		padding: 8px;
-		cursor: pointer;
 		&:hover {
-			background-color: #eee;
+			background-color: #eee; /* This will apply when hovering over the li or the button inside */
 		}
+	}
+
+	li button {
+		background: none;
+		border: none;
+		padding: 0;
+		margin: 0;
+		font: inherit;
+		color: inherit;
+		text-align: left;
+		width: 100%;
+		cursor: pointer;
 	}
 </style>

@@ -1,6 +1,6 @@
 import { getStopsAdjacency } from '$lib/db';
 import type { RequestHandler } from '@sveltejs/kit';
-import { dijkstra } from '../../../lib/path';
+import { dijkstra } from '../../../lib/itinerary';
 
 export const GET: RequestHandler = async (e) => {
 	const start = parseInt(e.url.searchParams.get('start') || '');
@@ -12,9 +12,9 @@ export const GET: RequestHandler = async (e) => {
 		);
 	}
 	const matrix = getStopsAdjacency();
-	const path = dijkstra(matrix, start, end);
+	const itinerary = dijkstra(matrix, start, end);
 	return new Response(
-		JSON.stringify({ path }),
+		JSON.stringify({ itinerary }),
 		{
 			headers: { 'Content-Type': 'application/json' }
 		}

@@ -12,16 +12,28 @@ function normalize(name: string) {
 }
 
 export function getStops(): Stop[] {
-	const rows = db.prepare("SELECT * FROM Stops").all().map(r => ({ ...<Stop>r, id: parseInt((<Stop>r).id as any as string) })) as Stop[];
-	return rows;
+	return db.prepare("SELECT * FROM Stops").all().map(
+		(r: any) => ({
+			id: parseInt(r.id, 10),
+			name: r.name,
+			plainName: r.plain_name,
+			line: r.line,
+			isTerminal: r.is_terminal === 1,
+			branch: parseInt(r.branch, 10),
+			position: {
+				x: parseFloat(r.pos_x),
+				y: parseFloat(r.pos_y)
+			}
+		})
+	) as Stop[];
 }
 
 export function getLinks(): Link[] {
 	const rows = db.prepare("SELECT * FROM Links").all() as { stop1: string, stop2: string, time: string }[];
 	return rows.map(row => ({
-		stop1: parseInt(row.stop1),
-		stop2: parseInt(row.stop2),
-		time: parseInt(row.time, 10)
+		from: parseInt(row.stop1),
+		to: parseInt(row.stop2),
+		duration: parseInt(row.time, 10)
 	}));
 }
 

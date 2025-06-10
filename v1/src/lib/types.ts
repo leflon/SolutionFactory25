@@ -1,17 +1,31 @@
 export type AdjancencyList = Map<number, [number, number][]>;
-export type Path = [number[], number[]]; // [stops, times]
 export type Stop = {
 	id: number;
 	name: string;
-	plain_name: string;
+	plainName: string;
 	line: string;
-	is_terminal: boolean;
+	isTerminal: boolean;
 	branch: number;
-	pos_x: number;
-	pos_y: number;
+	position: {
+		x: number;
+		y: number;
+	}
 }
 export type Link = {
-	stop1: number;
-	stop2: number;
-	time: number; // in seconds
+	from: number;
+	to: number;
+	/**
+	 * The time **in seconds** it takes to travel this link.
+	 */
+	duration: number;
 }
+
+export type Itinerary = {
+	stops: number[];
+	times: number[];
+}
+
+export type ItineraryQuery = {
+	from: number | null;
+	to: number | null;
+};

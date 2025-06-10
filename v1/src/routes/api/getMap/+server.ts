@@ -1,7 +1,7 @@
 import type { RequestHandler } from '@sveltejs/kit';
 import { getStops, getLinks, getStopsAdjacency } from '$lib/db';
 import type { Stop, Link } from '$lib/types';
-import { dijkstra } from '../../../lib/path';
+import { dijkstra } from '../../../lib/itinerary';
 
 export const GET: RequestHandler = async () => {
 	// Fetch stops and links from your db module
