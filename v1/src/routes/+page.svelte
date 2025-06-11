@@ -40,8 +40,5 @@
 		height: 100dvh;
 	}
 	.left-pane {
-		top: 10px;
-		left: 10px;
-		z-index: 1000;
-			}
+		}
 </style>

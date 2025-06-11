@@ -37,7 +37,16 @@
 </script>
 
 <div class="breakdown-container">
-	{#each breakdown as part}
+	{#each breakdown as part, i}
+		{#if i > 0 && i < breakdown.length}
+			<div class="connection-indicator">
+				<div class="line-number" style={'--line-color:' + LINE_COLORS[breakdown[i - 1].line]}>
+					{breakdown[i - 1].line}
+				</div>
+				<div>Correspondance</div>
+				<div class="line-number" style={'--line-color:' + LINE_COLORS[part.line]}>{part.line}</div>
+			</div>
+		{/if}
 		<div class="breakdown-part">
 			<div class="stops-list">
 				<div class="left-line-indicator"></div>
@@ -47,8 +56,8 @@
 					<div class="line-number" style={'--line-color:' + LINE_COLORS[part.line]}>
 						{part.line}
 					</div>
+					<div class="duration">{formatDuration(part.duration)}</div>
 				</div>
-				<div class="duration">{formatDuration(part.duration)}</div>
 				{#each part.stops.slice(1) as stop, i}
 					{@const isBold = i === part.stops.length - 2}
 					<div class={'stop' + (isBold ? ' bold' : '')}>{stop.name}</div>
@@ -59,6 +68,9 @@
 </div>
 
 <style>
+	.breakdown-container {
+		padding: 0 10px;
+	}
 	.breakdown-part {
 		position: relative;
 		margin: 10px 0;
@@ -69,16 +81,23 @@
 		gap: 5px;
 		margin-bottom: 5px;
 	}
+	.metro-indicator {
+		font-size: 12px;
+		color: #666;
+	}
 	.line-number {
 		background-color: var(--line-color);
 		color: #fff;
-		width: 16px;
-		height: 16px;
-		font-size: 12px;
+		width: 20px;
+		height: 20px;
+		font-size: 14px;
 		display: flex;
 		justify-content: center;
 		align-items: center;
 		border-radius: 50%;
+	}
+	.duration {
+		font-size: 12px;
 	}
 	.stops-list {
 		position: relative;
@@ -117,5 +136,14 @@
 		height: calc(100% - 16px);
 		top: 8px;
 		background-color: #aaa;
+	}
+
+	.connection-indicator {
+		display: flex;
+		align-items: center;
+		justify-content: center;
+		gap: 10px;
+		margin: 20px auto;
+		font: 500 18px Arial;
 	}
 </style>

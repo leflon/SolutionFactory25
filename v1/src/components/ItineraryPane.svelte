@@ -18,11 +18,13 @@
 </script>
 
 <div class="container">
-	<SearchInput bind:selectedStop={appState.itineraryQuery.from} placeholder="Station de départ" />
-	<SearchInput bind:selectedStop={appState.itineraryQuery.to} placeholder={"Station d'arrivée"} />
-	{#if canRequestItinerary}
-		<button onclick={handleSearch}>Chercher</button>
-	{/if}
+	<div class="search-container">
+		<SearchInput bind:selectedStop={appState.itineraryQuery.from} placeholder="Station de départ" />
+		<SearchInput bind:selectedStop={appState.itineraryQuery.to} placeholder={"Station d'arrivée"} />
+		{#if canRequestItinerary}
+			<button onclick={handleSearch}>Chercher</button>
+		{/if}
+	</div>
 	{#if appState.activeItinerary}
 		<ItineraryBreakdown itinerary={appState.activeItinerary} />
 	{/if}
@@ -33,11 +35,11 @@
 		display: flex;
 		flex-direction: column;
 		background-color: white;
-		padding: 10px;
 		border-radius: 5px;
 		box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
-		gap: 10px;
 		height: 100%;
+		overflow: auto;
+		width: 350px;
 	}
 	button {
 		background-color: #007bff;
@@ -50,5 +52,17 @@
 
 	button:hover {
 		background-color: #0056b3;
+	}
+
+	.search-container {
+		position: sticky;
+		top: 0;
+		display: flex;
+		flex-direction: column;
+		gap: 10px;
+		width: 100%;
+		padding: 10px;
+		background: white;
+		z-index: 10;
 	}
 </style>
