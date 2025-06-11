@@ -1,4 +1,4 @@
-export type AdjancencyList = Map<number, [number, number][]>;
+export type AdjacencyLists = Map<number, [number, number][]>;
 export type Stop = {
 	id: number;
 	name: string;

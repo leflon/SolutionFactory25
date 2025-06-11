@@ -1,27 +1,51 @@
 <script lang="ts">
 	import { LINE_COLORS } from '$lib/constants';
 	import { appState } from '$lib/store.svelte';
+	import type { AdjacencyLists, Itinerary } from '$lib/types';
 	import { onMount } from 'svelte';
+
+	interface Props {
+		map: AdjacencyLists;
+		activeItinerary?: Itinerary | null;
+	}
+
+	let { map, activeItinerary }: Props = $props();
 
 	let hoverStopLabel: HTMLDivElement;
 	let metroMapSVG: SVGElement;
 	function drawMap() {
+		console.log('Drawing metro map with stops and paths');
 		metroMapSVG.innerHTML = ''; // Clear previous content
-		for (const link of appState.links) {
-			const line = document.createElementNS('http://www.w3.org/2000/svg', 'line');
-			const from = appState.stops.find((s) => s.id === link.from);
-			const to = appState.stops.find((s) => s.id === link.to);
-			if (!from || !to) continue; // Skip if stops are not found
-			if (from.line !== to.line) continue;
-			line.setAttribute('data-stop1', from.id.toString());
-			line.setAttribute('data-stop2', to.id.toString());
-			line.setAttribute('x1', from.position.x.toString());
-			line.setAttribute('y1', from.position.y.toString());
-			line.setAttribute('x2', to.position.x.toString());
-			line.setAttribute('y2', to.position.y.toString());
-			line.setAttribute('stroke', LINE_COLORS[from.line] || 'black');
-			line.setAttribute('stroke-width', '3');
-			metroMapSVG.appendChild(line);
+		for (const [fromId, adjancentNodes] of map.entries()) {
+			const from = appState.stops.find((s) => s.id === fromId);
+			if (!from) continue;
+			for (const [toId, duration] of adjancentNodes) {
+				const to = appState.stops.find((s) => s.id === toId);
+				if (!to) continue;
+				if (from.line !== to.line) continue;
+				const line = document.createElementNS('http://www.w3.org/2000/svg', 'line');
+				line.setAttribute('data-stop1', from.id.toString());
+				line.setAttribute('data-stop2', to.id.toString());
+				line.setAttribute('data-duration', duration.toString());
+				line.setAttribute('x1', from.position.x.toString());
+				line.setAttribute('y1', from.position.y.toString());
+				line.setAttribute('x2', to.position.x.toString());
+				line.setAttribute('y2', to.position.y.toString());
+				line.setAttribute('stroke', LINE_COLORS[from.line] || 'black');
+				line.setAttribute('stroke-width', '3');
+				line.addEventListener('mouseenter', () => {
+					hoverStopLabel.textContent = `${from.name} - ${to.name} (${duration}s)`;
+					hoverStopLabel.classList.remove('hidden');
+				});
+				line.addEventListener('mousemove', (e) => {
+					hoverStopLabel.style.left = `${e.clientX}px`;
+					hoverStopLabel.style.top = `${e.clientY}px`;
+				});
+				line.addEventListener('mouseleave', () => {
+					hoverStopLabel.classList.add('hidden');
+				});
+				metroMapSVG.appendChild(line);
+			}
 		}
 		// Draw all stops as circles
 		for (const stop of appState.stops) {
@@ -76,10 +100,10 @@
 	}
 
 	function drawPath() {
-		if (!appState.activeItinerary) return;
+		if (!activeItinerary) return;
 
 		// Bounce stops in the current route
-		const stops = appState.activeItinerary.stops.map((s) =>
+		const stops = activeItinerary.stops.map((s) =>
 			document.querySelector(`circle[data-stop-id="${s}"]`)
 		) as SVGCircleElement[];
 		const duration = Math.max(2, stops.length * 0.1);
@@ -101,10 +125,7 @@
 		for (const line of pathLines) {
 			const stop1Id = parseInt(line.getAttribute('data-stop1') || '0', 10);
 			const stop2Id = parseInt(line.getAttribute('data-stop2') || '0', 10);
-			if (
-				appState.activeItinerary.stops.includes(stop1Id) &&
-				appState.activeItinerary.stops.includes(stop2Id)
-			) {
+			if (activeItinerary.stops.includes(stop1Id) && activeItinerary.stops.includes(stop2Id)) {
 				const length = Math.sqrt(
 					Math.pow(
 						parseFloat(line.getAttribute('x2') || '0') - parseFloat(line.getAttribute('x1') || '0'),
@@ -125,8 +146,8 @@
 	}
 
 	$effect(() => {
-		if (appState.stops && appState.links) drawMap();
-		if (appState.activeItinerary) drawPath();
+		if (appState.stops && map) drawMap();
+		if (activeItinerary) drawPath();
 		else resetMapStyles();
 	});
 

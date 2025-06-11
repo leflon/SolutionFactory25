@@ -1,15 +1,19 @@
-import type { Itinerary, ItineraryQuery, Link, Stop } from './types';
+import type { AdjacencyLists, Itinerary, ItineraryQuery, Link, Stop } from './types';
 
 export interface AppState {
 	stops: Stop[];
-	links: Link[];
+	mapAdjacencyLists: AdjacencyLists;
+	minimumSpanningTree: AdjacencyLists;
 	activeItinerary: Itinerary | null;
 	itineraryQuery: ItineraryQuery;
+	displayMST: boolean;
 }
 
 export const appState = $state<AppState>({
 	stops: [],
-	links: [],
+	displayMST: false,
+	mapAdjacencyLists: new Map(),
+	minimumSpanningTree: new Map(),
 	activeItinerary: null,
 	itineraryQuery: {
 		from: null,

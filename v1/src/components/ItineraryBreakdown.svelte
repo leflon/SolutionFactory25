@@ -70,6 +70,7 @@
 <style>
 	.breakdown-container {
 		padding: 0 10px;
+		width: 100%;
 	}
 	.breakdown-part {
 		position: relative;

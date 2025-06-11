@@ -1,19 +1,17 @@
+import { getAdjacencyLists, getStops } from '$lib/db';
+import { getMinimumSpanningTree } from '$lib/graph';
+import type { Stop } from '$lib/types';
 import type { RequestHandler } from '@sveltejs/kit';
-import { getStops, getLinks, getStopsAdjacency } from '$lib/db';
-import type { Stop, Link } from '$lib/types';
-import { dijkstra } from '../../../lib/itinerary';
 
-export const GET: RequestHandler = async () => {
-	// Fetch stops and links from your db module
-	const stops: Stop[] = await getStops();
-	const links: Link[] = await getLinks();
-	const ad = getStopsAdjacency();
+export const GET: RequestHandler = () => {
+	const stops: Stop[] = getStops();
+	const adjacencyLists = getAdjacencyLists();
+	const minimumSpanningTree = getMinimumSpanningTree(adjacencyLists);
+	const stringifiedLists = JSON.stringify(Array.from(adjacencyLists.entries()));
+	const stringifiedMST = JSON.stringify(Array.from(minimumSpanningTree.entries()));
 
-	console.log(ad);
-	const example = dijkstra(ad, 349, 99);
-	console.log(example);
 	return new Response(
-		JSON.stringify({ stops, links, example }),
+		JSON.stringify({ stops, adjacencyLists: stringifiedLists, minimumSpanningTree: stringifiedMST }),
 		{
 			headers: { 'Content-Type': 'application/json' }
 		}

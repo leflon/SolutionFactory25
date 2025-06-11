@@ -1,5 +1,5 @@
 import Database from 'better-sqlite3';
-import type { AdjancencyList, Link, Stop } from './types';
+import type { AdjacencyLists, Link, Stop } from './types';
 
 const db = new Database("data/db.sqlite");
 
@@ -43,7 +43,7 @@ export function getStopIdsByName(name: string): string[] {
 	return rows.map(row => row.id);
 }
 
-export function getStopsAdjacency(): AdjancencyList {
+export function getAdjacencyLists(): AdjacencyLists {
 	const graph: Map<number, [number, number][]> = new Map();
 	const rows = db.prepare("SELECT * FROM Links").all() as { stop1: string, stop2: string, time: string }[];
 	for (const row of rows) {

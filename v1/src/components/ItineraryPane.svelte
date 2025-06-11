@@ -7,6 +7,8 @@
 		appState.itineraryQuery.from !== null && appState.itineraryQuery.to !== null
 	);
 
+	let isConnected: boolean | null = $state(null);
+
 	async function handleSearch() {
 		if (!canRequestItinerary) return;
 		const res = await fetch(
@@ -14,6 +16,11 @@
 		);
 		const data = await res.json();
 		appState.activeItinerary = data.itinerary;
+	}
+	async function getConnectivity() {
+		const res = await fetch('/api/getMetroConnectivity');
+		const data = await res.json();
+		isConnected = data.isConnected;
 	}
 </script>
 
@@ -27,6 +34,21 @@
 	</div>
 	{#if appState.activeItinerary}
 		<ItineraryBreakdown itinerary={appState.activeItinerary} />
+	{:else}
+		<div class="connectivity">
+			<button onclick={getConnectivity}>Vérifier la connectivité du réseau</button>
+			<div class="connectivity-status">
+				{#if isConnected}
+					<p>Le réseau est bien connecté !</p>
+				{:else if isConnected === false}
+					<p>Le réseau n'est pas connecté</p>
+				{/if}
+			</div>
+		</div>
+		<div class="mst">
+			<input id="mst" type="checkbox" bind:checked={appState.displayMST} />
+			<label for="mst">Afficher l'arbre couvrant minimal</label>
+		</div>
 	{/if}
 </div>
 
@@ -34,6 +56,7 @@
 	.container {
 		display: flex;
 		flex-direction: column;
+		align-items: center;
 		background-color: white;
 		border-radius: 5px;
 		box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
@@ -64,5 +87,8 @@
 		padding: 10px;
 		background: white;
 		z-index: 10;
+	}
+	p {
+		text-align: center;
 	}
 </style>

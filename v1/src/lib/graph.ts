@@ -1,5 +1,59 @@
-import type { AdjancencyList, Itinerary } from "./types";
+import type { AdjacencyLists, Itinerary } from "./types";
 import Heap from "heap";
+
+
+export function checkConnectivity(graph: AdjacencyLists): boolean {
+    if (graph.size === 0) return false;
+
+    const visited = new Set<number>();
+
+    // Start DFS from the first node in the graph
+    const startNode = graph.keys().next().value!;
+    const stack: number[] = [startNode];
+
+    while (stack.length > 0) {
+        const node = stack.pop()!;
+        if (!visited.has(node)) {
+            visited.add(node);
+            for (const [neighbor] of graph.get(node)!) {
+                if (!visited.has(neighbor)) {
+                    stack.push(neighbor);
+                }
+            }
+        }
+    }
+
+    // If all nodes are visited, the graph is connected
+    return visited.size === graph.size;
+}
+
+export function getMinimumSpanningTree(graph: AdjacencyLists): AdjacencyLists {
+    const mst: AdjacencyLists = new Map();
+
+    const visited = new Set<number>();
+    const startNode = graph.keys().next().value!;
+    const queue = new Heap<[number, number, number]>((a, b) => a[2] - b[2]); // [from, to, weight]
+
+    visited.add(startNode);
+    for (const [neighbor, weight] of graph.get(startNode)!) {
+        queue.push([startNode, neighbor, weight]);
+    }
+    while (visited.size < graph.size && queue.size() > 0) {
+        const [from, to, weight] = queue.pop()!;
+        if (visited.has(to)) continue;
+        visited.add(to);
+        if (!mst.has(from)) mst.set(from, []);
+        if (!mst.has(to)) mst.set(to, []);
+        mst.get(to)!.push([from, weight]);
+
+        for (const [neighbor, edgeWeight] of graph.get(to)!) {
+            if (!visited.has(neighbor)) {
+                queue.push([to, neighbor, edgeWeight]);
+            }
+        }
+    }
+    return mst;
+}
 
 /**
  * Dijkstra's algorithm to find the shortest path between two stops.
@@ -8,7 +62,7 @@ import Heap from "heap";
  * @param end - The destination stop.
  * @returns An array containing the shortest path and an array of times for each stop.
  */
-export function dijkstra(graph: AdjancencyList, start: number, end: number): Itinerary {
+export function dijkstra(graph: AdjacencyLists, start: number, end: number): Itinerary {
     const distances: Record<number, number> = {};
     const previous: Record<number, number | null> = {};
     const queue = new Heap<[number, number]>((a, b) => a[1] - b[1]);
