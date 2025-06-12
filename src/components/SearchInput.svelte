@@ -6,20 +6,31 @@
 		placeholder: string;
 		selectedStop: number | null;
 	}
+
 	let { placeholder, selectedStop = $bindable() }: Props = $props();
 
+	// Component state
 	let searchTerm: string = $state('');
 	let searchResults: number[] = $state([]);
 	let showResults: boolean = $state(false);
 
+	/**
+	 * Updates search term when selected stop changes
+	 */
 	$effect(() => {
 		if (selectedStop !== null && selectedStop >= 0 && selectedStop < appState.stops.length)
 			searchTerm = appState.stops[selectedStop].name;
 		if (selectedStop === null) searchTerm = '';
 	});
+
+	/**
+	 * Handles search input changes and fetches matching stops
+	 * @param event Input event from search field
+	 */
 	async function handleInput(event: Event) {
 		const target = event.target as HTMLInputElement;
 		searchTerm = target.value;
+
 		if (searchTerm.length === 0) {
 			searchResults = [];
 			return;
@@ -30,19 +41,29 @@
 		searchResults = data.stops.map((stop: string) => parseInt(stop, 10));
 	}
 
+	/**
+	 * Handles stop selection from search results
+	 * @param stop Selected stop ID
+	 */
 	const handleSelection = (stop: number) => {
 		selectedStop = stop;
 		showResults = false;
 		searchTerm = appState.stops[selectedStop].name;
 	};
 
+	/**
+	 * Shows search results when input is focused
+	 */
 	const handleFocus = () => {
 		showResults = true;
 	};
+
+	/**
+	 * Handles input blur event
+	 * Note: Results visibility is managed by click events instead
+	 */
 	const handleBlur = () => {
-		setTimeout(() => {
-			//showResults = false;
-		}, 100);
+		// Results visibility is managed by click events
 	};
 </script>
 
@@ -59,8 +80,9 @@
 		/>
 		<button type="submit"><Search size={16} /></button>
 	</div>
+
 	{#if searchResults.length > 0 && showResults}
-		<ul>
+		<ul class="search-results">
 			{#each searchResults as result}
 				<li>
 					<button type="button" onclick={() => handleSelection(result)}>
@@ -78,6 +100,7 @@
 		width: 100%;
 		margin: 0 auto;
 	}
+	
 	.search-input {
 		display: flex;
 		gap: 8px;
@@ -104,11 +127,14 @@
 		align-items: center;
 		justify-content: center;
 		cursor: pointer;
-		&:hover {
-			background-color: #0056b3;
-		}
 	}
-	ul {
+
+	button[type='submit']:hover {
+		background-color: #0056b3;
+	}
+
+	/* Search results styling */
+	.search-results {
 		border-radius: 5px;
 		z-index: 1000;
 		position: absolute;
@@ -123,14 +149,16 @@
 		overflow-y: auto;
 		max-height: 300px;
 	}
-	li {
+
+	.search-results li {
 		padding: 8px;
-		&:hover {
-			background-color: #eee; /* This will apply when hovering over the li or the button inside */
-		}
 	}
 
-	li button {
+	.search-results li:hover {
+		background-color: #eee;
+	}
+
+	.search-results li button {
 		background: none;
 		border: none;
 		padding: 0;

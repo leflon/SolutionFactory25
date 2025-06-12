@@ -1,3 +1,8 @@
+/**
+ * Color mapping for metro lines
+ * Each line has a unique color for visual identification
+ * Colors are in hexadecimal format
+ */
 export const LINE_COLORS: Record<string, string> = {
 	'1': '#FFCE00',
 	'2': '#0064B0',
