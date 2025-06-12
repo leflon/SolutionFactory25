@@ -15,6 +15,7 @@
 	$effect(() => {
 		if (selectedStop !== null && selectedStop >= 0 && selectedStop < appState.stops.length)
 			searchTerm = appState.stops[selectedStop].name;
+		if (selectedStop === null) searchTerm = '';
 	});
 	async function handleInput(event: Event) {
 		const target = event.target as HTMLInputElement;

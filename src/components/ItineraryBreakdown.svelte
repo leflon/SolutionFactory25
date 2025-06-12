@@ -2,6 +2,7 @@
 	import { LINE_COLORS } from '$lib/constants';
 	import { appState } from '$lib/store.svelte';
 	import type { Itinerary, Stop } from '$lib/types';
+	import { ArrowRight, X } from '@lucide/svelte';
 
 	interface Props {
 		itinerary: Itinerary;
@@ -34,9 +35,33 @@
 		}
 		return result;
 	});
+
+	const onClose = () => {
+		appState.activeItinerary = null;
+		appState.itineraryQuery = { from: null, to: null };
+	};
 </script>
 
 <div class="breakdown-container">
+	<div class="breakdown-header">
+		<button class="close-button" onclick={onClose}>
+			<X />
+		</button>
+		<h2>Itinéraire</h2>
+		<div class="header-duration">
+			{formatDuration(breakdown.reduce((acc, curr) => (acc += curr.duration), 0))}
+		</div>
+		<div class="header-lines">
+			{#each breakdown.map((part) => part.line) as line, i}
+				<span class="line-number" style={'--line-color:' + LINE_COLORS[line]}>{line}</span>
+				{#if i < breakdown.length - 1}
+					<span class="line-separator">
+						<ArrowRight />
+					</span>
+				{/if}
+			{/each}
+		</div>
+	</div>
 	{#each breakdown as part, i}
 		{#if i > 0 && i < breakdown.length}
 			<div class="connection-indicator">
@@ -72,6 +97,38 @@
 		padding: 0 10px;
 		width: 100%;
 	}
+
+	.breakdown-header {
+		position: relative;
+		margin-bottom: 10px;
+		background: #f1f1f1;
+		padding: 10px;
+		border-radius: 5px;
+		& .close-button {
+			position: absolute;
+			top: 10px;
+			right: 10px;
+			cursor: pointer;
+			color: #333;
+			font-size: 16px;
+		}
+		& h2 {
+			font-size: 18px;
+			margin: 0;
+		}
+		& .header-duration {
+			font-size: 14px;
+			color: #666;
+			margin-top: 5px;
+		}
+		& .header-lines {
+			display: flex;
+			align-items: center;
+			gap: 5px;
+			margin-top: 5px;
+		}
+	}
+
 	.breakdown-part {
 		position: relative;
 		margin: 10px 0;
