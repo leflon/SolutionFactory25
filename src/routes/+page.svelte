@@ -29,7 +29,10 @@
 		<div class="left-pane">
 			<ItineraryPane />
 		</div>
-		<MetroMap map={appState.displayMST ? appState.minimumSpanningTree : appState.mapAdjacencyLists} />
+		<MetroMap
+			map={appState.displayMST ? appState.minimumSpanningTree : appState.mapAdjacencyLists}
+			activeItinerary={appState.activeItinerary}
+		/>
 	</div>
 {/if}
 
